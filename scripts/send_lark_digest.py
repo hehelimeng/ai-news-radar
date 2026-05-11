@@ -147,14 +147,20 @@ def send_lark_message(markdown: str, *, user_id: str, chat_id: str, dry_run: boo
         raise SystemExit("Missing LARK_USER_OPEN_ID or LARK_CHAT_ID")
     if dry_run:
         cmd.append("--dry-run")
-    subprocess.run(cmd, check=True)
+    result = subprocess.run(cmd, text=True, capture_output=True)
+    if result.stdout:
+        print(result.stdout)
+    if result.stderr:
+        print(result.stderr)
+    if result.returncode != 0:
+        raise SystemExit(result.returncode)
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data-file", default="data/latest-24h.json")
     parser.add_argument("--site-url", default=os.environ.get("AI_NEWS_RADAR_SITE_URL", ""))
-    parser.add_argument("--top-n", type=int, default=int(os.environ.get("LARK_DIGEST_TOP_N", "12")))
+    parser.add_argument("--top-n", type=int, default=int(os.environ.get("LARK_DIGEST_TOP_N", "8")))
     parser.add_argument("--max-per-site", type=int, default=int(os.environ.get("LARK_DIGEST_MAX_PER_SITE", "4")))
     parser.add_argument("--max-per-source", type=int, default=int(os.environ.get("LARK_DIGEST_MAX_PER_SOURCE", "2")))
     parser.add_argument("--user-id", default=os.environ.get("LARK_USER_OPEN_ID", ""))
