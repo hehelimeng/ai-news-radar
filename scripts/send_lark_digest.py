@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
 from collections import Counter
 from datetime import datetime
@@ -35,6 +36,23 @@ def item_title(item: dict[str, Any]) -> str:
         or item.get("title_en")
         or "未命名更新"
     ).strip()
+
+
+def compact_summary(text: str, max_chars: int = 68) -> str:
+    """Turn a title into one concise digest sentence.
+
+    The daily push deliberately stays extractive: it does not invent details
+    that are not present in the source title.
+    """
+    s = re.sub(r"\s+", " ", text or "").strip()
+    s = s.strip(" -—–|｜")
+    s = re.sub(r"^【([^】]{2,24})】\s*", r"\1：", s)
+    s = re.sub(r"^\[([^\]]{2,24})\]\s*", r"\1：", s)
+    if len(s) > max_chars:
+        s = s[: max_chars - 1].rstrip(" ，,。.!！?？:：;；") + "…"
+    if s and s[-1] not in "。.!！?？…":
+        s += "。"
+    return s or "未命名更新。"
 
 
 def select_digest_items(
@@ -106,19 +124,16 @@ def build_markdown(
     archive_total = int(payload.get("archive_total") or 0)
 
     lines = [
-        "**AI News Radar 每日热点**",
+        f"**AI News Radar｜今日 AI 热点 Top {len(selected)}**",
         "",
-        f"更新时间：{generated_at}",
-        f"AI 强相关：{total_items} 条 · 来源站点：{site_count} 个 · 归档：{archive_total} 条",
-        "",
-        f"**Top {len(selected)}**",
+        f"更新：{generated_at} · AI 强相关 {total_items} 条 · 来源 {site_count} 个 · 归档 {archive_total} 条",
     ]
 
     if not selected:
         lines.append("今天暂时没有抓到 AI 强相关热点。")
     else:
         for idx, item in enumerate(selected, 1):
-            title = item_title(item)
+            summary = compact_summary(item_title(item))
             url = str(item.get("url") or "").strip()
             site_name = str(item.get("site_name") or item.get("site_id") or "未知来源").strip()
             source = str(item.get("source") or "").strip()
@@ -127,8 +142,8 @@ def build_markdown(
             lines.extend(
                 [
                     "",
-                    f"{idx}. [{title}]({url})",
-                    f"   来源：{source_label} · {published}",
+                    f"{idx}. **核心：{summary}**",
+                    f"   [原文链接]({url}) · {source_label} · {published}",
                 ]
             )
 
@@ -160,7 +175,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data-file", default="data/latest-24h.json")
     parser.add_argument("--site-url", default=os.environ.get("AI_NEWS_RADAR_SITE_URL", ""))
-    parser.add_argument("--top-n", type=int, default=int(os.environ.get("LARK_DIGEST_TOP_N", "8")))
+    parser.add_argument("--top-n", type=int, default=int(os.environ.get("LARK_DIGEST_TOP_N", "10")))
     parser.add_argument("--max-per-site", type=int, default=int(os.environ.get("LARK_DIGEST_MAX_PER_SITE", "4")))
     parser.add_argument("--max-per-source", type=int, default=int(os.environ.get("LARK_DIGEST_MAX_PER_SOURCE", "2")))
     parser.add_argument("--user-id", default=os.environ.get("LARK_USER_OPEN_ID", ""))

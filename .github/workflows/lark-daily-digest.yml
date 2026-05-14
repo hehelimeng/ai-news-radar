@@ -70,7 +70,7 @@ jobs:
         env:
           LARK_USER_OPEN_ID: ${{ secrets.LARK_USER_OPEN_ID }}
           LARK_CHAT_ID: ${{ secrets.LARK_CHAT_ID }}
-          LARK_DIGEST_TOP_N: ${{ vars.LARK_DIGEST_TOP_N || 8 }}
+          LARK_DIGEST_TOP_N: ${{ vars.LARK_DIGEST_TOP_N || 10 }}
           AI_NEWS_RADAR_SITE_URL: https://${{ github.repository_owner }}.github.io/ai-news-radar/
         run: |
           python scripts/send_lark_digest.py

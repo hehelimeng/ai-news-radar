@@ -1,4 +1,4 @@
-from scripts.send_lark_digest import build_markdown, select_digest_items
+from scripts.send_lark_digest import build_markdown, compact_summary, select_digest_items
 
 
 def item(site_id, source, title, url):
@@ -45,7 +45,14 @@ def test_build_markdown_contains_links_and_counts():
         max_per_source=2,
     )
 
-    assert "AI News Radar 每日热点" in markdown
-    assert "AI 强相关：2 条" in markdown
-    assert "[OpenAI 发布更新](https://openai.com/news/x)" in markdown
+    assert "AI News Radar｜今日 AI 热点 Top 2" in markdown
+    assert "AI 强相关 2 条" in markdown
+    assert "核心：OpenAI 发布更新。" in markdown
+    assert "[原文链接](https://openai.com/news/x)" in markdown
     assert "[打开完整雷达](https://hehelimeng.github.io/ai-news-radar/)" in markdown
+
+
+def test_compact_summary_trims_noise_and_adds_sentence_punctuation():
+    assert compact_summary("[OpenAI] 在 Windows 上构建安全有效的沙箱以启用 Codex") == (
+        "OpenAI：在 Windows 上构建安全有效的沙箱以启用 Codex。"
+    )
